@@ -1,0 +1,22 @@
+# CSCE-642: Deep Reinforcement Learning
+#
+# Direct dependencies only, with lower bounds rather than exact pins. Pinning a
+# full `pip freeze` (as this file previously did) breaks every year as wheels
+# for the pinned versions stop being built for current Python releases.
+#
+# Requires Python 3.11 or newer.
+#
+# Box2D (LunarLander) needs SWIG on the system first. MuJoCo (Hopper,
+# HalfCheetah) ships prebuilt wheels and needs nothing extra. See README.md.
+
+gymnasium[box2d,classic-control,mujoco,toy-text]>=1.3.0
+torch>=2.6.0
+numpy>=1.26
+scipy>=1.11
+scikit-learn>=1.4
+pandas>=2.1
+matplotlib>=3.8
+joblib>=1.3
+
+# Used by run.py to let you toggle rendering mid-training with '^' (Ctrl+6).
+pynput>=1.7
