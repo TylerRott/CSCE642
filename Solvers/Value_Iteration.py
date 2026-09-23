@@ -75,10 +75,11 @@ class ValueIteration(AbstractSolver):
         for each_state in range(self.env.observation_space.n):
             # Do a one-step lookahead to find the best action
             # Update the value function. Ref: Sutton book eq. 4.10.
+            values = self.one_step_lookahead(each_state)
+            self.V[each_state] = np.max(values)
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
-            pass
 
         # Dont worry about this part
         self.statistics[Statistics.Rewards.value] = np.sum(self.V)
@@ -151,6 +152,8 @@ class ValueIteration(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
+            values = self.one_step_lookahead(state)
+            return np.argmax(values)
             
 
         return policy_fn
@@ -203,12 +206,29 @@ class AsynchVI(ValueIteration):
         # Do a one-step lookahead to find the best action       #
         # Update the value function. Ref: Sutton book eq. 4.10. #
         #########################################################
+        if self.pq.isEmpty():
+            self.statistics[Statistics.Rewards.value] = np.sum(self.V)
+            self.statistics[Statistics.Steps.value] = -1
+            return
+
+        state = self.pq.pop()
+
+        old_v = self.V[state]
+        values = self.one_step_lookahead(state)
+        self.V[state] = np.max(values)
+
+        if abs(old_v - self.V[state]) > 1e-6:
+            for pred_state in self.pred[state]:
+                pred_values = self.one_step_lookahead(pred_state)
+                best_action_value = np.max(pred_values)
+                self.pq.update(pred_state, -abs(self.V[pred_state] - best_action_value))
 
         # you can ignore this part
         self.statistics[Statistics.Rewards.value] = np.sum(self.V)
         self.statistics[Statistics.Steps.value] = -1
 
     def pull_updates(self):
+
         raise NotImplementedError
 
     def __str__(self):
