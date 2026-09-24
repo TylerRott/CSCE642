@@ -206,22 +206,20 @@ class AsynchVI(ValueIteration):
         # Do a one-step lookahead to find the best action       #
         # Update the value function. Ref: Sutton book eq. 4.10. #
         #########################################################
-        if self.pq.isEmpty():
+        if self.pq.isEmpty(): #if we have no states to update
             self.statistics[Statistics.Rewards.value] = np.sum(self.V)
             self.statistics[Statistics.Steps.value] = -1
             return
 
-        state = self.pq.pop()
+        state = self.pq.pop() #get next state
 
-        old_v = self.V[state]
-        values = self.one_step_lookahead(state)
+        values = self.one_step_lookahead(state) #get all values ahead of state
         self.V[state] = np.max(values)
 
-        if abs(old_v - self.V[state]) > 1e-6:
-            for pred_state in self.pred[state]:
-                pred_values = self.one_step_lookahead(pred_state)
-                best_action_value = np.max(pred_values)
-                self.pq.update(pred_state, -abs(self.V[pred_state] - best_action_value))
+        for pred_state in sorted(self.pred.get(state, ())): #all predecessors of current
+            pred_values = self.one_step_lookahead(pred_state)
+            best_action_value = np.max(pred_values)
+            self.pq.update(pred_state, -abs(self.V[pred_state] - best_action_value))
 
         # you can ignore this part
         self.statistics[Statistics.Rewards.value] = np.sum(self.V)
