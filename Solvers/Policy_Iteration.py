@@ -53,6 +53,9 @@ class PolicyIteration(AbstractSolver):
         for s in range(self.env.observation_space.n):
             # Find the best action by one-step lookahead
             # Ties are resolved in favor of actions with lower indexes (Hint: use max/argmax directly).
+            best_action = int(np.argmax(self.one_step_lookahead(s)))
+            self.policy[s] = 0
+            self.policy[s, best_action] = 1
 
             ################################
             #   YOUR IMPLEMENTATION HERE   #
@@ -103,6 +106,22 @@ class PolicyIteration(AbstractSolver):
             self.options.gamma: Gamma discount factor.
             np.linalg.solve(a, b) # Won't work with discount factor = 0!
         """
+
+        num_states = self.env.observation_space.n   #number of states
+        num_actions = self.env.action_space.n
+
+        A = np.eye(num_states) #total number of states on diagonals
+        b = np.zeros(num_states) #total number of states
+
+        for i in range(num_states):
+            action = int(np.argmax(self.policy[i])) #Find best action by one-step lookahead
+            for prob, next_state, reward, done in self.env.P[i][action]:
+                if prob == 0:
+                    continue
+                b[i] += prob * reward
+                A[i, next_state] -= self.options.gamma * prob #Continuously add the discounted value of the next state to the current state in the A matrix
+
+        self.V = np.linalg.solve(A, b)          
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
