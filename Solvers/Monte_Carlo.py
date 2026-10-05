@@ -62,9 +62,34 @@ class MonteCarlo(AbstractSolver):
         episode = []
         state, _ = self.env.reset()
         discount_factor = self.options.gamma
-        ################################
-        #   YOUR IMPLEMENTATION HERE   #
-        ################################
+
+        for _ in range(self.options.steps):
+            action_probs = self.policy(state)
+            action = self.sample(action_probs)
+            next_state, reward, done, _ = self.step(action)
+            episode.append((state, action, reward))
+            state = next_state
+            if done:
+                break
+
+                # Index of the first occurrence of each (state, action) pair
+        first_visit = {}
+        for t, (s, a, _) in enumerate(episode):
+            if (s, a) not in first_visit:
+                first_visit[(s, a)] = t
+
+        G = 0.0
+        for t in reversed(range(len(episode))):
+            state, action, reward = episode[t]
+            G = reward + discount_factor * G
+            # Only update at the first visit, where G is the return from that point
+            if first_visit[(state, action)] == t:
+                sa = (state, action)
+                self.returns_sum[sa] += G
+                self.returns_count[sa] += 1.0
+                self.Q[state][action] = self.returns_sum[sa] / self.returns_count[sa]
+
+        self.policy = self.make_epsilon_greedy_policy()
 
     def pull_updates(self):
         raise NotImplementedError
@@ -90,10 +115,11 @@ class MonteCarlo(AbstractSolver):
         nA = self.env.action_space.n
 
         def policy_fn(observation):
-            ################################
-            #   YOUR IMPLEMENTATION HERE   #
-            ################################
-            return None
+            q_values = self.Q[observation]
+            best_action = int(np.argmax(q_values))
+            action_probs = np.full(nA, self.options.epsilon / nA, dtype=float)
+            action_probs[best_action] += 1.0 - self.options.epsilon
+            return action_probs
 
         return policy_fn
 
@@ -110,10 +136,10 @@ class MonteCarlo(AbstractSolver):
         """
 
         def policy_fn(state):
-            ################################
-            #   YOUR IMPLEMENTATION HERE   #
-            ################################
-            return -1
+            q_values = self.Q[state]
+            if len(q_values) == 0:
+                return 0
+            return int(np.argmax(q_values))
 
         return policy_fn
 
@@ -162,13 +188,35 @@ class OffPolicyMC(MonteCarlo):
             self.Q[state][action]: q value for ('state', 'action')
         """
         episode = []
-        # Reset the environment
         state, _ = self.env.reset()
 
-        ################################
-        #   YOUR IMPLEMENTATION HERE   #
-        ################################
-        
+        for _ in range(self.options.steps):
+            action_probs = self.behavior_policy(state)
+            action = self.sample(action_probs)
+            next_state, reward, done, _ = self.step(action)
+            episode.append((state, action, reward))
+            state = next_state
+            if done:
+                break
+
+        G = 0.0
+        W = 1.0
+
+        for t in reversed(range(len(episode))):
+            state, action, reward = episode[t]
+            G = self.options.gamma * G + reward
+
+            self.C[state][action] += W
+            self.Q[state][action] += (W / self.C[state][action]) * (
+                G - self.Q[state][action]
+            )
+
+            # If the behavior action differs from the greedy target action,
+            # the target policy would have probability 0 -> stop.
+            if action != self.target_policy(state):
+                break
+
+            W = W / self.behavior_policy(state)[action]
 
     def create_random_policy(self):
         """
