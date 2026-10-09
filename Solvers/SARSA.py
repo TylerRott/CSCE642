@@ -45,9 +45,22 @@ class Sarsa(AbstractSolver):
 
         # Reset the environment
         state, _ = self.env.reset()
-        ################################
-        #   YOUR IMPLEMENTATION HERE   #
-        ################################
+        action_probs = self.epsilon_greedy(state)
+        action = self.sample(action_probs)
+
+        for _ in range(self.options.steps):
+            next_state, reward, done, _ = self.step(action)
+
+            next_action_probs = self.epsilon_greedy(next_state)
+            next_action = self.sample(next_action_probs)
+
+            td_target = reward + (1.0 - float(done)) * self.options.gamma * self.Q[next_state][next_action]
+            self.Q[state][action] += self.options.alpha * (td_target - self.Q[state][action])
+
+            state = next_state
+            action = next_action
+            if done:
+                break
 
     def pull_updates(self):
         raise NotImplementedError
@@ -64,10 +77,10 @@ class Sarsa(AbstractSolver):
         """
 
         def policy_fn(state):
-            ################################
-            #   YOUR IMPLEMENTATION HERE   #
-            ################################
-            return -1
+            q_values = self.Q[state]
+            if len(q_values) == 0:
+                return 0
+            return int(np.argmax(q_values))
 
         return policy_fn
 
@@ -85,9 +98,12 @@ class Sarsa(AbstractSolver):
         Returns:
             Probability of taking actions as a vector where each entry is the probability of taking that action
         """
-        ################################
-        #   YOUR IMPLEMENTATION HERE   #
-        ################################
+        nA = self.env.action_space.n
+        q_values = self.Q[state]
+        best_action = int(np.argmax(q_values))
+        action_probs = np.full(nA, self.options.epsilon / nA, dtype=float)
+        action_probs[best_action] += 1.0 - self.options.epsilon
+        return action_probs
 
     def plot(self, stats, smoothing_window=20, final=False):
         plotting.plot_episode_stats(stats, smoothing_window, final=final)

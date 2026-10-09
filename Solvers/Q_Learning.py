@@ -52,9 +52,21 @@ class QLearning(AbstractSolver):
         # Reset the environment
         state, _ = self.env.reset()
 
-        ################################
-        #   YOUR IMPLEMENTATION HERE   #
-        ################################
+        for _ in range(self.options.steps):
+            action_probs = self.epsilon_greedy(state)
+            action = self.sample(action_probs)
+            next_state, reward, done, _ = self.step(action)
+
+            target = reward + (1.0 - float(done)) * self.options.gamma * np.max(
+                self.Q[next_state]
+            )
+            self.Q[state][action] += self.options.alpha * (
+                target - self.Q[state][action]
+            )
+
+            state = next_state
+            if done:
+                break
 
     def pull_updates(self):
         raise NotImplementedError
@@ -76,10 +88,10 @@ class QLearning(AbstractSolver):
         """
 
         def policy_fn(state):
-            ################################
-            #   YOUR IMPLEMENTATION HERE   #
-            ################################
-            return -1
+            q_values = self.Q[state]
+            if len(q_values) == 0:
+                return 0
+            return int(np.argmax(q_values))
 
         return policy_fn
 
@@ -97,9 +109,12 @@ class QLearning(AbstractSolver):
         Returns:
             Probability of taking actions as a vector where each entry is the probability of taking that action
         """
-        ################################
-        #   YOUR IMPLEMENTATION HERE   #
-        ################################
+        nA = self.env.action_space.n
+        q_values = self.Q[state]
+        best_action = int(np.argmax(q_values))
+        action_probs = np.full(nA, self.options.epsilon / nA, dtype=float)
+        action_probs[best_action] += 1.0 - self.options.epsilon
+        return action_probs
 
 
 class ApproxQLearning(QLearning):
