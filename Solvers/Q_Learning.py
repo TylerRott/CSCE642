@@ -141,9 +141,20 @@ class ApproxQLearning(QLearning):
         # Reset the environment
         state, _ = self.env.reset()
 
-        ################################
-        #   YOUR IMPLEMENTATION HERE   #
-        ################################
+        for _ in range(self.options.steps):
+            action = self.sample(self.epsilon_greedy(state))
+            next_state, reward, done, _ = self.step(action)
+
+            target = reward
+            if not done:
+                target += self.options.gamma * np.max(
+                    self.estimator.predict(next_state)
+                )
+            self.estimator.update(state, action, target)
+
+            state = next_state
+            if done:
+                break
 
     def pull_updates(self):
         raise NotImplementedError
@@ -165,9 +176,12 @@ class ApproxQLearning(QLearning):
         Returns:
             Probability of taking actions as a vector where each entry is the probability of taking that action
         """
-        ################################
-        #   YOUR IMPLEMENTATION HERE   #
-        ################################
+        nA = self.env.action_space.n
+        q_values = self.estimator.predict(state)
+        best_action = int(np.argmax(q_values))
+        action_probs = np.full(nA, self.options.epsilon / nA, dtype=float)
+        action_probs[best_action] += 1.0 - self.options.epsilon
+        return action_probs
 
     def create_greedy_policy(self):
         """
@@ -180,11 +194,7 @@ class ApproxQLearning(QLearning):
         nA = self.env.action_space.n
 
         def policy_fn(state):
-            ################################
-            #   YOUR IMPLEMENTATION HERE   #
-            ################################
-            return -1
-            
+            return int(np.argmax(self.estimator.predict(state)))
 
         return policy_fn
 
