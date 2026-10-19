@@ -50,9 +50,9 @@ class QLearning(AbstractSolver):
         """
 
         # Reset the environment
-        state, _ = self.env.reset()
+        state, noCare = self.env.reset()
 
-        for _ in range(self.options.steps):
+        for i in range(self.options.steps):
             action_probs = self.epsilon_greedy(state)
             action = self.sample(action_probs)
             next_state, reward, done, _ = self.step(action)
@@ -144,6 +144,20 @@ class ApproxQLearning(QLearning):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        for _ in range(self.options.steps):
+            action = self.sample(self.epsilon_greedy(state))
+            next_state, reward, done, _ = self.step(action) #get all next state, reward, done, and info
+
+            target = reward
+            if not done:
+                target += self.options.gamma * np.max(
+                    self.estimator.predict(next_state)
+                )
+            self.estimator.update(state, action, target)
+
+            state = next_state
+            if done:
+                break
 
     def pull_updates(self):
         raise NotImplementedError
@@ -168,6 +182,12 @@ class ApproxQLearning(QLearning):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        nA = self.env.action_space.n #set number of actions
+        q_values = self.estimator.predict(state) #q values for current state
+        best_action = int(np.argmax(q_values)) #get max
+        action_probs = np.full(nA, self.options.epsilon / nA, dtype=float) #set all actions to epsilon/nA
+        action_probs[best_action] += 1.0 - self.options.epsilon #set best action to 1-epsilon
+        return action_probs
 
     def create_greedy_policy(self):
         """
@@ -183,7 +203,7 @@ class ApproxQLearning(QLearning):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
-            return -1
+            return int(np.argmax(self.estimator.predict(state)))
             
 
         return policy_fn
