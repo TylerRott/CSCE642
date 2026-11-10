@@ -44,20 +44,20 @@ class Sarsa(AbstractSolver):
         """
 
         # Reset the environment
-        state, _ = self.env.reset()
+        state, dontCare = self.env.reset()
         action_probs = self.epsilon_greedy(state)
         action = self.sample(action_probs)
 
-        for _ in range(self.options.steps):
-            next_state, reward, done, _ = self.step(action)
+        for i in range(self.options.steps):
+            next_state, reward, done, _ = self.step(action) #get next step and rewards
 
-            next_action_probs = self.epsilon_greedy(next_state)
+            next_action_probs = self.epsilon_greedy(next_state) #probability
             next_action = self.sample(next_action_probs)
 
-            td_target = reward + (1.0 - float(done)) * self.options.gamma * self.Q[next_state][next_action]
-            self.Q[state][action] += self.options.alpha * (td_target - self.Q[state][action])
+            td_target = reward + (1.0 - float(done)) * self.options.gamma * self.Q[next_state][next_action] #formula from class
+            self.Q[state][action] += self.options.alpha * (td_target - self.Q[state][action]) #add to q based on formula
 
-            state = next_state
+            state = next_state #next
             action = next_action
             if done:
                 break

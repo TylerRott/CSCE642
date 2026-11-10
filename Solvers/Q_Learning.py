@@ -50,9 +50,9 @@ class QLearning(AbstractSolver):
         """
 
         # Reset the environment
-        state, _ = self.env.reset()
+        state, noCare = self.env.reset()
 
-        for _ in range(self.options.steps):
+        for i in range(self.options.steps):
             action_probs = self.epsilon_greedy(state)
             action = self.sample(action_probs)
             next_state, reward, done, _ = self.step(action)
@@ -141,9 +141,12 @@ class ApproxQLearning(QLearning):
         # Reset the environment
         state, _ = self.env.reset()
 
+        ################################
+        #   YOUR IMPLEMENTATION HERE   #
+        ################################
         for _ in range(self.options.steps):
             action = self.sample(self.epsilon_greedy(state))
-            next_state, reward, done, _ = self.step(action)
+            next_state, reward, done, _ = self.step(action) #get all next state, reward, done, and info
 
             target = reward
             if not done:
@@ -176,11 +179,14 @@ class ApproxQLearning(QLearning):
         Returns:
             Probability of taking actions as a vector where each entry is the probability of taking that action
         """
-        nA = self.env.action_space.n
-        q_values = self.estimator.predict(state)
-        best_action = int(np.argmax(q_values))
-        action_probs = np.full(nA, self.options.epsilon / nA, dtype=float)
-        action_probs[best_action] += 1.0 - self.options.epsilon
+        ################################
+        #   YOUR IMPLEMENTATION HERE   #
+        ################################
+        nA = self.env.action_space.n #set number of actions
+        q_values = self.estimator.predict(state) #q values for current state
+        best_action = int(np.argmax(q_values)) #get max
+        action_probs = np.full(nA, self.options.epsilon / nA, dtype=float) #set all actions to epsilon/nA
+        action_probs[best_action] += 1.0 - self.options.epsilon #set best action to 1-epsilon
         return action_probs
 
     def create_greedy_policy(self):
@@ -194,7 +200,11 @@ class ApproxQLearning(QLearning):
         nA = self.env.action_space.n
 
         def policy_fn(state):
+            ################################
+            #   YOUR IMPLEMENTATION HERE   #
+            ################################
             return int(np.argmax(self.estimator.predict(state)))
+            
 
         return policy_fn
 
