@@ -76,6 +76,13 @@ class Reinforce(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        returns = []
+        discounted_return = 0.0
+        for reward in reversed(rewards):
+            discounted_return = reward + gamma * discounted_return
+            returns.append(discounted_return)
+        returns.reverse()
+        return returns
 
     def select_action(self, state):
         """
@@ -138,7 +145,19 @@ class Reinforce(AbstractSolver):
             # Run update_model() only ONCE #
             # at the END of an episode.    #
             ################################
-            pass
+            action, prob, baseline = self.select_action(state)
+            next_state, reward, done, _ = self.step(action)
+
+            rewards.append(reward)
+            action_probs.append(prob)
+            baselines.append(baseline)
+
+            state = next_state
+            if done:
+                break
+
+        if rewards:
+            self.update_model(rewards, action_probs, baselines)
 
     def pg_loss(self, advantage, prob):
         """
@@ -159,7 +178,7 @@ class Reinforce(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
-
+        return -torch.log(prob) * advantage
 
     def pull_updates(self):
         raise NotImplementedError
