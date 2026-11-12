@@ -79,9 +79,9 @@ class Reinforce(AbstractSolver):
         returns = []
         discounted_return = 0.0
         for reward in reversed(rewards):
-            discounted_return = reward + gamma * discounted_return
-            returns.append(discounted_return)
-        returns.reverse()
+            discounted_return = reward + gamma * discounted_return  #return formula
+            returns.append(discounted_return) #add it in 
+        returns.reverse() #back propogate
         return returns
 
     def select_action(self, state):
@@ -145,8 +145,8 @@ class Reinforce(AbstractSolver):
             # Run update_model() only ONCE #
             # at the END of an episode.    #
             ################################
-            action, prob, baseline = self.select_action(state)
-            next_state, reward, done, _ = self.step(action)
+            action, prob, baseline = self.select_action(state) #get next sets
+            next_state, reward, done, _ = self.step(action) #take the step
 
             rewards.append(reward)
             action_probs.append(prob)
@@ -178,7 +178,7 @@ class Reinforce(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
-        return -torch.log(prob) * advantage
+        return -torch.log(prob) * advantage 
 
     def pull_updates(self):
         raise NotImplementedError
